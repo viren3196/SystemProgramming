@@ -2,6 +2,7 @@
 #include<stdio.h>
 #include<string.h>
 #include<string>
+#include<fstream>
 using namespace std;
 
 FILE *fp1 = fopen("newinput.txt","r");
@@ -280,6 +281,12 @@ struct COND c[6];
 	}
 }
 
+string Constant(string);
+string Mneumonic(string, ofstream& file);
+void Symbol(string, ofstream& file);
+void Literal(string, ofstream& file);
+void pass2();
+
 main()
 {	
 	init();
@@ -408,7 +415,131 @@ main()
 		cout<<l[i].addr<<endl;
 	}
 	
+	fclose(fp1);
+	fclose(fp2);
 	if(cnt>0)
 		cout<<"\nPASS II cannot process....undefined labels found!\n";
+	else
+		pass2();
 	return 0;
+}
+
+string Constant(string word)
+{
+	if(word[0]=='(' && word[1]=='c')
+		return "YES";
+	return "NO";
+}
+
+string Mneumonic(string word1, ofstream& file2)
+{
+	if(word1[0]!='(')
+		return "NO";
+		
+	int found = word1.find(',');
+	string word2 = word1.substr(1,found-1);
+	if(word2=="AD" || word2=="IS" || word2=="DL")
+	{
+		//cout<<word2;
+		if(word2=="IS")
+		{
+			//cout<<word1.substr(found+1,word1.size()-2);
+			file2<<word1.substr(found+1,2);
+			file2<<" ";
+		}
+		else
+		{
+			file2<<"-- ";
+		}
+		return "YES";
+	}
+	return "NO";
+}
+
+void Symbol(string word, ofstream& file2)
+{
+	int index = word[3]-48;
+	file2<<s1[index].addr;
+	file2<<" ";
+}
+
+void Literal(string word, ofstream& file2)
+{
+	int index = word[3]-48;
+	file2<<l[index].addr;
+	file2<<" ";
+}
+
+string isnum(string word, ofstream& file2)
+{
+	if(word[0]>='0' && word[0]<='9')
+	{
+		file2<<word<<" ";
+		return "YES";
+	}
+	return "NO";
+}
+
+
+bool valid(char ch)
+{
+	if(ch>=0 && ch<=255)
+		return true;
+	return false;
+}
+
+
+void pass2()
+{
+	FILE *fp3 = fopen("output.txt","r");
+	ofstream file2;
+	file2.open("pass2out.txt",ios::trunc);
+	char ch,pv;
+	string word = "";
+
+	do
+	{
+		ch = fgetc(fp3);
+		if(ch=='(')
+			break;
+	}while(true);
+	
+	while(ch!=EOF)
+	{	
+		if(valid(ch)==false)
+			;
+		else if(pv == ' ' && ch == ' ')
+			word = "";
+		else if((ch=='\n' || ch==' ' || ch=='\t') || (ch==',' && pv>='0' && pv<='9'))
+		{
+			if(word != " ")
+			{
+				//cout<<word<<endl;
+				if(Constant(word) == "YES")
+					file2<<"-- ";
+				else if(Mneumonic(word,file2) == "YES")		
+					;
+				else if(word[0]=='(' && word[1]=='S')
+					Symbol(word,file2);
+				
+				else if(word[0]=='(' && word[1]=='L')
+					Literal(word,file2);
+				
+				else if(isnum(word,file2) == "YES")
+					;
+				else
+					;
+			
+				if(ch=='\n')
+					file2<<endl;
+			}
+			word = "";
+		}
+		else
+			word+=ch;
+		pv = ch;
+		ch = fgetc(fp3);
+	}
+	
+	file2.close();
 }
